@@ -1,0 +1,6 @@
+/target
+.aetherlattice/
+*.db
+*.db-journal
+*.pcapng
+/reports
