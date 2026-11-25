@@ -58,9 +58,10 @@ impl AetherError {
     pub fn exit_code(&self) -> ExitCode {
         match self {
             AetherError::AuthorizationDenied(_) => ExitCode::AuthorizationDenied,
-            AetherError::Validation(_) | AetherError::Yaml(_) | AetherError::Json(_) => {
-                ExitCode::ValidationOrMigrationFailure
-            }
+            AetherError::Validation(_)
+            | AetherError::Yaml(_)
+            | AetherError::Json(_)
+            | AetherError::Sqlite(_) => ExitCode::ValidationOrMigrationFailure,
             AetherError::DependencyUnavailable(_) => ExitCode::DependencyUnavailable,
             AetherError::Timeout(_) => ExitCode::Timeout,
             AetherError::Cancelled => ExitCode::CancelledByUser,

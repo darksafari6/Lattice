@@ -18,17 +18,22 @@ pub struct EvidenceRecord {
     pub created_at: DateTime<Utc>,
 }
 
-fn compute_sha256(val: &serde_json::Value) -> String {
-    let bytes = serde_json::to_vec(val).unwrap_or_default();
+fn compute_sha256(val: &serde_json::Value) -> Result<String, AetherError> {
+    let bytes = serde_json::to_vec(val)?;
     let mut hasher = Sha256::new();
     hasher.update(&bytes);
-    format!("{:x}", hasher.finalize())
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
 impl EvidenceRecord {
-    pub fn new(case_id: Option<String>, kind: &str, summary: &str, payload: serde_json::Value) -> Self {
-        let sha256 = compute_sha256(&payload);
-        Self {
+    pub fn new(
+        case_id: Option<String>,
+        kind: &str,
+        summary: &str,
+        payload: serde_json::Value,
+    ) -> Result<Self, AetherError> {
+        let sha256 = compute_sha256(&payload)?;
+        Ok(Self {
             id: format!("ev-{}", Uuid::new_v4()),
             case_id,
             kind: kind.to_string(),
@@ -36,11 +41,11 @@ impl EvidenceRecord {
             payload,
             sha256,
             created_at: Utc::now(),
-        }
+        })
     }
 
-    pub fn verify(&self) -> bool {
-        compute_sha256(&self.payload) == self.sha256
+    pub fn verify(&self) -> Result<bool, AetherError> {
+        Ok(compute_sha256(&self.payload)? == self.sha256)
     }
 
     pub fn save(&self, data_dir: &Path) -> Result<(), AetherError> {
@@ -122,9 +127,10 @@ mod tests {
             "observation",
             "test",
             serde_json::json!({"host": "127.0.0.1"}),
-        );
-        assert!(rec.verify());
+        )
+        .unwrap();
+        assert!(rec.verify().unwrap());
         rec.payload = serde_json::json!({"host": "192.0.2.1"});
-        assert!(!rec.verify());
+        assert!(!rec.verify().unwrap());
     }
 }
