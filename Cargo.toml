@@ -5,6 +5,10 @@ edition = "2021"
 description = "Context-Aware Network State & Logic Enumeration Framework"
 license = "Apache-2.0"
 
+[[bin]]
+name = "lattice"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }

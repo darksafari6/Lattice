@@ -20,10 +20,10 @@ cargo fmt --check
 
 ## Example Usage
 ```bash
-aetherlattice system doctor --verbose
-aetherlattice scope init --output ./scope.yaml
-aetherlattice scope validate --file ./scope.yaml
-aetherlattice scope explain --target 127.0.0.1:25 --file ./scope.yaml
+lattice system doctor --verbose
+lattice scope init --output ./scope.yaml
+lattice scope validate --file ./scope.yaml
+lattice scope explain --target 127.0.0.1:25 --file ./scope.yaml
 ```
 
 ## Exit Codes

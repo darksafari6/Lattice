@@ -27,7 +27,7 @@ pub enum ShellType {
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "aetherlattice",
+    name = "lattice",
     version,
     about = "Context-Aware Network State & Logic Enumeration Framework",
     long_about = "AetherLattice is a CLI-first network intelligence and protocol research framework."
