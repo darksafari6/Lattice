@@ -327,6 +327,34 @@ impl NetworkGraph {
         Ok(())
     }
 
+    pub fn export_gexf(&self, output: &Path) -> Result<(), AetherError> {
+        let mut out = String::from(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+             <gexf xmlns=\"http://gexf.net/1.3\" version=\"1.3\">\n\
+             <graph mode=\"static\" defaultedgetype=\"directed\">\n\
+             <nodes>\n",
+        );
+        for n in &self.nodes {
+            out.push_str(&format!(
+                "  <node id=\"{}\" label=\"{}\" />\n",
+                n.id, n.label
+            ));
+        }
+        out.push_str("</nodes>\n<edges>\n");
+        for e in &self.edges {
+            out.push_str(&format!(
+                "  <edge id=\"{}\" source=\"{}\" target=\"{}\" label=\"{}\" />\n",
+                e.id,
+                e.source_id,
+                e.target_id,
+                e.kind.as_str()
+            ));
+        }
+        out.push_str("</edges>\n</graph>\n</gexf>\n");
+        std::fs::write(output, out)?;
+        Ok(())
+    }
+
     /// Safe, limited query grammar:
     /// `<devices|services|nodes> [where trust_level <>=|<=|==|>|< <int>]`
     pub fn query_nodes(&self, query: &str) -> Result<Vec<&GraphNode>, AetherError> {

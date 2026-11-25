@@ -5,6 +5,7 @@ mod evidence;
 mod graph;
 mod intelligence;
 mod investigate;
+mod observe;
 mod pdef;
 mod protocol;
 mod scope;
@@ -18,8 +19,8 @@ use tracing_subscriber::EnvFilter;
 
 use cli::{
     Cli, Commands, DiscoverCommand, EvidenceCommand, GraphCommand, GraphExportFormat,
-    IntelligenceCommand, InvestigateCommand, LogLevel, OutputFormat, PdefCommand, ProtocolCommand,
-    ReportCommand, ScopeCommand, SnapshotCommand, SystemCommand, TwinCommand,
+    IntelligenceCommand, InvestigateCommand, LogLevel, ObserveCommand, OutputFormat, PdefCommand,
+    ProtocolCommand, ReportCommand, ScopeCommand, SnapshotCommand, SystemCommand, TwinCommand,
 };
 use error::{AetherError, ExitCode};
 use graph::{NetworkGraph, NodeKind};
@@ -85,6 +86,7 @@ async fn run(cli: Cli) -> Result<(), AetherError> {
         Commands::Scope(args) => handle_scope(args.command, cli.json),
         Commands::Graph(args) => handle_graph(args.command, &cli.data_dir, cli.json),
         Commands::Discover(args) => handle_discover(args.command, &cli.data_dir, cli.json),
+        Commands::Observe(args) => handle_observe(args.command, cli.json),
         Commands::Snapshot(args) => handle_snapshot(args.command, &cli.data_dir, cli.json),
         Commands::Twin(args) => handle_twin(args.command, &cli.data_dir, cli.json),
         Commands::Pdef(args) => handle_pdef(args.command, cli.json),
@@ -324,6 +326,7 @@ fn handle_graph(
             match format {
                 GraphExportFormat::Json => g.export_json(&output)?,
                 GraphExportFormat::Csv => g.export_csv(&output)?,
+                GraphExportFormat::Gexf => g.export_gexf(&output)?,
             }
             if json_flag {
                 println!(
@@ -681,6 +684,46 @@ fn handle_protocol(cmd: ProtocolCommand, json_flag: bool) -> Result<(), AetherEr
             }
             Ok(())
         }
+        ProtocolCommand::Fingerprint {
+            target,
+            profile,
+            output,
+        } => {
+            let dna = protocol::fingerprint_protocol(&target, &profile)?;
+            if let Some(out_path) = output {
+                std::fs::write(&out_path, serde_json::to_string_pretty(&dna)?)?;
+            }
+            if json_flag {
+                println!("{}", serde_json::to_string_pretty(&dna)?);
+            } else {
+                println!(
+                    "Protocol DNA '{}' ({}): banner={}, {} transition signatures",
+                    dna.target,
+                    dna.profile,
+                    dna.banner_prefix,
+                    dna.transition_signatures.len()
+                );
+            }
+            Ok(())
+        }
+        ProtocolCommand::Compare { first, second } => {
+            let cmp = protocol::compare_dna(&first, &second)?;
+            if json_flag {
+                println!("{}", serde_json::to_string_pretty(&cmp)?);
+            } else {
+                println!(
+                    "DNA Compare ({} vs {}): identical={}",
+                    cmp.first_target, cmp.second_target, cmp.identical
+                );
+                if !cmp.added_signatures.is_empty() {
+                    println!("  + {:?}", cmp.added_signatures);
+                }
+                if !cmp.removed_signatures.is_empty() {
+                    println!("  - {:?}", cmp.removed_signatures);
+                }
+            }
+            Ok(())
+        }
     }
 }
 
@@ -881,6 +924,26 @@ fn handle_discover(
                     "Discovery Inventory (mode={mode}, dry_run={dry_run}): {} permitted target(s)",
                     validated_scope.permitted_targets.len()
                 );
+            }
+            Ok(())
+        }
+    }
+}
+
+fn handle_observe(cmd: ObserveCommand, json_flag: bool) -> Result<(), AetherError> {
+    match cmd {
+        ObserveCommand::Replay { input, speed } => {
+            let summary = observe::replay_capture(&input, speed)?;
+            if json_flag {
+                println!("{}", serde_json::to_string_pretty(&summary)?);
+            } else {
+                println!(
+                    "Replayed {} event(s) from {} (speed={}x)",
+                    summary.events_replayed, summary.input, summary.speed
+                );
+                for ev in &summary.events {
+                    println!("  {} [{}] {} -> {}: {}", ev.timestamp, ev.protocol, ev.src, ev.dst, ev.summary);
+                }
             }
             Ok(())
         }
