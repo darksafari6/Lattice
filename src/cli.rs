@@ -392,6 +392,11 @@ pub enum EvidenceCommand {
         #[arg(long)]
         id: String,
     },
+    /// Verify SHA-256 integrity of an evidence record
+    Verify {
+        #[arg(long)]
+        id: String,
+    },
     /// Redact sensitive tokens from a text file
     Redact {
         #[arg(long, value_name = "FILE")]

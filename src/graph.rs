@@ -328,6 +328,14 @@ impl NetworkGraph {
     }
 
     pub fn export_gexf(&self, output: &Path) -> Result<(), AetherError> {
+        fn xml_escape(input: &str) -> String {
+            input
+                .replace('&', "&amp;")
+                .replace('<', "&lt;")
+                .replace('>', "&gt;")
+                .replace('"', "&quot;")
+                .replace('\'', "&apos;")
+        }
         let mut out = String::from(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
              <gexf xmlns=\"http://gexf.net/1.3\" version=\"1.3\">\n\
@@ -337,17 +345,18 @@ impl NetworkGraph {
         for n in &self.nodes {
             out.push_str(&format!(
                 "  <node id=\"{}\" label=\"{}\" />\n",
-                n.id, n.label
+                xml_escape(&n.id),
+                xml_escape(&n.label)
             ));
         }
         out.push_str("</nodes>\n<edges>\n");
         for e in &self.edges {
             out.push_str(&format!(
                 "  <edge id=\"{}\" source=\"{}\" target=\"{}\" label=\"{}\" />\n",
-                e.id,
-                e.source_id,
-                e.target_id,
-                e.kind.as_str()
+                xml_escape(&e.id),
+                xml_escape(&e.source_id),
+                xml_escape(&e.target_id),
+                xml_escape(e.kind.as_str())
             ));
         }
         out.push_str("</edges>\n</graph>\n</gexf>\n");

@@ -753,6 +753,34 @@ fn handle_evidence(
             }
             Ok(())
         }
+        EvidenceCommand::Verify { id } => {
+            let rec = evidence::EvidenceRecord::load(data_dir, &id)?;
+            let valid = rec.verify();
+            if json_flag {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "id": rec.id,
+                        "sha256": rec.sha256,
+                        "valid": valid
+                    }))?
+                );
+            } else {
+                println!(
+                    "Evidence {} integrity: {} (sha256={})",
+                    rec.id,
+                    if valid { "VALID" } else { "TAMPERED" },
+                    rec.sha256
+                );
+            }
+            if !valid {
+                return Err(AetherError::Validation(format!(
+                    "evidence '{}' failed SHA-256 integrity verification",
+                    rec.id
+                )));
+            }
+            Ok(())
+        }
         EvidenceCommand::Redact { input, output } => {
             let content = std::fs::read_to_string(&input)?;
             let redacted = evidence::redact_text(&content);
