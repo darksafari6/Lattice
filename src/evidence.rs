@@ -2,6 +2,7 @@ use std::path::Path;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::error::AetherError;
@@ -13,19 +14,33 @@ pub struct EvidenceRecord {
     pub kind: String,
     pub summary: String,
     pub payload: serde_json::Value,
+    pub sha256: String,
     pub created_at: DateTime<Utc>,
+}
+
+fn compute_sha256(val: &serde_json::Value) -> String {
+    let bytes = serde_json::to_vec(val).unwrap_or_default();
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    format!("{:x}", hasher.finalize())
 }
 
 impl EvidenceRecord {
     pub fn new(case_id: Option<String>, kind: &str, summary: &str, payload: serde_json::Value) -> Self {
+        let sha256 = compute_sha256(&payload);
         Self {
             id: format!("ev-{}", Uuid::new_v4()),
             case_id,
             kind: kind.to_string(),
             summary: summary.to_string(),
             payload,
+            sha256,
             created_at: Utc::now(),
         }
+    }
+
+    pub fn verify(&self) -> bool {
+        compute_sha256(&self.payload) == self.sha256
     }
 
     pub fn save(&self, data_dir: &Path) -> Result<(), AetherError> {
@@ -98,5 +113,18 @@ mod tests {
     fn test_redact_text() {
         assert_eq!(redact_text("auth token=supersecret123"), "auth token=[REDACTED]");
         assert_eq!(redact_text("normal log line"), "normal log line");
+    }
+
+    #[test]
+    fn test_evidence_sha256_verify() {
+        let mut rec = EvidenceRecord::new(
+            None,
+            "observation",
+            "test",
+            serde_json::json!({"host": "127.0.0.1"}),
+        );
+        assert!(rec.verify());
+        rec.payload = serde_json::json!({"host": "192.0.2.1"});
+        assert!(!rec.verify());
     }
 }

@@ -75,6 +75,8 @@ pub enum Commands {
     Graph(GraphArgs),
     /// Network discovery and inventory import
     Discover(DiscoverArgs),
+    /// Offline capture replay and observation
+    Observe(ObserveArgs),
     /// Historical snapshots and temporal diffing
     Snapshot(SnapshotArgs),
     /// Offline network digital twin modelling and simulation
@@ -163,6 +165,7 @@ pub enum ScopeCommand {
 pub enum GraphExportFormat {
     Json,
     Csv,
+    Gexf,
 }
 
 #[derive(Debug, Args)]
@@ -353,6 +356,22 @@ pub enum ProtocolCommand {
         #[arg(long)]
         i_have_permission: bool,
     },
+    /// Fingerprint protocol behavior ("Protocol DNA")
+    Fingerprint {
+        #[arg(long)]
+        target: String,
+        #[arg(long, default_value = "smtp")]
+        profile: String,
+        #[arg(long, value_name = "FILE")]
+        output: Option<PathBuf>,
+    },
+    /// Compare two Protocol DNA fingerprint files
+    Compare {
+        #[arg(long, value_name = "FILE")]
+        first: PathBuf,
+        #[arg(long, value_name = "FILE")]
+        second: PathBuf,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -370,6 +389,11 @@ pub enum EvidenceCommand {
     },
     /// Show a specific evidence record
     Show {
+        #[arg(long)]
+        id: String,
+    },
+    /// Verify SHA-256 integrity of an evidence record
+    Verify {
         #[arg(long)]
         id: String,
     },
@@ -467,5 +491,22 @@ pub enum DiscoverCommand {
         dry_run: bool,
         #[arg(long)]
         i_have_permission: bool,
+    },
+}
+
+#[derive(Debug, Args)]
+pub struct ObserveArgs {
+    #[command(subcommand)]
+    pub command: ObserveCommand,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ObserveCommand {
+    /// Replay an offline JSON capture file
+    Replay {
+        #[arg(long, value_name = "FILE")]
+        input: PathBuf,
+        #[arg(long, default_value_t = 1.0)]
+        speed: f64,
     },
 }
