@@ -74,9 +74,8 @@ impl InvestigationCase {
             let entry = entry?;
             if entry.path().extension().and_then(|e| e.to_str()) == Some("json") {
                 let content = std::fs::read_to_string(entry.path())?;
-                if let Ok(c) = serde_json::from_str::<Self>(&content) {
-                    out.push(c);
-                }
+                let c = serde_json::from_str::<Self>(&content)?;
+                out.push(c);
             }
         }
         Ok(out)
@@ -106,10 +105,21 @@ pub fn export_case_report(
             Ok(path)
         }
         "html" => {
+            fn html_escape(input: &str) -> String {
+                input
+                    .replace('&', "&amp;")
+                    .replace('<', "&lt;")
+                    .replace('>', "&gt;")
+                    .replace('"', "&quot;")
+                    .replace('\'', "&#x27;")
+            }
             let path = output_dir.join(format!("{}.html", case.id));
             let html = format!(
                 "<!doctype html><html><head><meta charset=\"utf-8\"><title>{}</title></head><body><h1>Investigation {}</h1><p>Finding: {}</p><p>Status: {:?}</p></body></html>",
-                case.id, case.id, case.finding_id, case.status
+                html_escape(&case.id),
+                html_escape(&case.id),
+                html_escape(&case.finding_id),
+                case.status
             );
             std::fs::write(&path, html)?;
             Ok(path)

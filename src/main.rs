@@ -755,7 +755,7 @@ fn handle_evidence(
         }
         EvidenceCommand::Verify { id } => {
             let rec = evidence::EvidenceRecord::load(data_dir, &id)?;
-            let valid = rec.verify();
+            let valid = rec.verify()?;
             if json_flag {
                 println!(
                     "{}",
